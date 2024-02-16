@@ -1,0 +1,12 @@
+{
+  "Version": 3,
+  "ListAllProjects": false,
+  "MultiProjectConfigurations": {
+    "HCK.Startup": {
+      "Projects": {
+        "Cloud5mins.ShortenerTools.Functions": {},
+        //"Cloud5mins.ShortenerTools.TinyBlazorAdmin": {}
+      }
+    }
+  }
+}

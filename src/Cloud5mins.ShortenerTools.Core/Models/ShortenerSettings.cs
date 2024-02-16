@@ -1,4 +1,4 @@
-namespace Cloud5mins.ShortenerTools.Core.Domain
+namespace Cloud5mins.ShortenerTools.Core.Models
 {
     public class ShortenerSettings
     {

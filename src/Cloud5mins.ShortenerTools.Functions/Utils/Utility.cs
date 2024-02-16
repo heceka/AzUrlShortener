@@ -1,33 +1,24 @@
-using Cloud5mins.ShortenerTools.Core.Domain;
-using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System;
-using System.Linq;
-using System.Net;
-using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
+using Cloud5mins.ShortenerTools.Core.Domain;
 
-
-
-namespace Cloud5mins.ShortenerTools
+namespace Cloud5mins.ShortenerTools.Functions.Utils
 {
     public static class Utility
     {
         //reshuffled for randomisation, same unique characters just jumbled up, you can replace with your own version
         private const string ConversionCode = "FjTG0s5dgWkbLf_8etOZqMzNhmp7u6lUJoXIDiQB9-wRxCKyrPcv4En3Y21aASHV";
-        private static readonly int Base = ConversionCode.Length;
         //sets the length of the unique code to add to vanity
         private const int MinVanityCodeLength = 5;
+
+        private static readonly int Base = ConversionCode.Length;
 
         public static async Task<string> GetValidEndUrl(string vanity, StorageTableHelper stgHelper)
         {
             if (string.IsNullOrEmpty(vanity))
             {
-                var newKey = await stgHelper.GetNextTableId();
+                var newKey = await stgHelper.GetNextTableIdAsync();
                 string getCode() => Encode(newKey);
-                if (await stgHelper.IfShortUrlEntityExistByVanity(getCode()))
+                if (await stgHelper.IfShortUrlEntityExistByVanityAsync(getCode()))
                     return await GetValidEndUrl(vanity, stgHelper);
 
                 return string.Join(string.Empty, getCode());

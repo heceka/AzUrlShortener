@@ -1,191 +1,179 @@
-using Microsoft.Azure.Cosmos.Table;
 using System.Text.Json;
+using Azure;
+using Azure.Data.Tables;
 
 namespace Cloud5mins.ShortenerTools.Core.Domain
 {
     public class StorageTableHelper
     {
-        private string StorageConnectionString { get; set; }
+        const string TableUrlsDetails = "UrlsDetails";
+        const string TableClickStats = "ClickStats";
+
+        //private readonly string _storageConnectionString;
+        private readonly TableServiceClient _tableServiceClient;
 
         public StorageTableHelper() { }
-
         public StorageTableHelper(string storageConnectionString)
         {
-            StorageConnectionString = storageConnectionString;
-        }
-        public CloudStorageAccount CreateStorageAccountFromConnectionString()
-        {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-            return storageAccount;
+            _tableServiceClient = new TableServiceClient(storageConnectionString);
         }
 
-        private CloudTable GetTable(string tableName)
+        private TableClient GetTableClient(string tableName)
         {
-            CloudStorageAccount storageAccount = CreateStorageAccountFromConnectionString();
-            CloudTableClient tableClient = storageAccount.CreateCloudTableClient(new TableClientConfiguration());
-            CloudTable table = tableClient.GetTableReference(tableName);
-            table.CreateIfNotExists();
+            // Create a new table. The TableItem class stores properties of the created table.
+            //TableItem table = _tableServiceClient.CreateTableIfNotExists(tableName);
 
-            return table;
-        }
-        private CloudTable GetUrlsTable()
-        {
-            CloudTable table = GetTable("UrlsDetails");
-            return table;
+            // Get a reference to the TableClient from the service client instance.
+            var tableClient = _tableServiceClient.GetTableClient(tableName);
+            // Create the table if it doesn't exist.
+            tableClient.CreateIfNotExists();
+
+            return tableClient;
         }
 
-        private CloudTable GetStatsTable()
+        private TableClient GetUrlsTable()
         {
-            CloudTable table = GetTable("ClickStats");
+            var table = GetTableClient(TableUrlsDetails);
             return table;
         }
 
-        public async Task<ShortUrlEntity> GetShortUrlEntity(ShortUrlEntity row)
+        private TableClient GetStatsTable()
         {
-            TableOperation selOperation = TableOperation.Retrieve<ShortUrlEntity>(row.PartitionKey, row.RowKey);
-            TableResult result = await GetUrlsTable().ExecuteAsync(selOperation);
-            ShortUrlEntity eShortUrl = result.Result as ShortUrlEntity;
-            return eShortUrl;
+            var table = GetTableClient(TableClickStats);
+            return table;
         }
 
-        public async Task<List<ShortUrlEntity>> GetAllShortUrlEntities()
+        public async Task<ShortUrlEntity> GetShortUrlEntityAsync(ShortUrlEntity row, CancellationToken cancellationToken = default)
         {
-            var tblUrls = GetUrlsTable();
-            TableContinuationToken token = null;
-            var lstShortUrl = new List<ShortUrlEntity>();
-            do
+            Response<ShortUrlEntity> result = null;
+            try
             {
-                // Retreiving all entities that are NOT the NextId entity 
-                // (it's the only one in the partion "KEY")
-                TableQuery<ShortUrlEntity> rangeQuery = new TableQuery<ShortUrlEntity>().Where(
-                    filter: TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.NotEqual, "KEY"));
-
-                var queryResult = await tblUrls.ExecuteQuerySegmentedAsync(rangeQuery, token);
-                lstShortUrl.AddRange(queryResult.Results as List<ShortUrlEntity>);
-                token = queryResult.ContinuationToken;
-            } while (token != null);
-            return lstShortUrl;
+                var tableClient = GetUrlsTable();
+                result = await tableClient.GetEntityAsync<ShortUrlEntity>(row.PartitionKey, row.RowKey, cancellationToken: cancellationToken);
+            }
+            catch (RequestFailedException ex)
+            {
+                Console.WriteLine(ex);
+            }
+            return result?.Value;
         }
 
-        /// <summary>
-        /// Returns the ShortUrlEntity of the <paramref name="vanity"/>
-        /// </summary>
-        /// <param name="vanity"></param>
-        /// <returns>ShortUrlEntity</returns>
-        public async Task<ShortUrlEntity> GetShortUrlEntityByVanity(string vanity)
+        public async Task<IList<ShortUrlEntity>> GetAllShortUrlsAsync(CancellationToken cancellationToken = default)
         {
-            var tblUrls = GetUrlsTable();
-            TableContinuationToken token = null;
-            ShortUrlEntity shortUrlEntity = null;
-            do
-            {
-                TableQuery<ShortUrlEntity> query = new TableQuery<ShortUrlEntity>().Where(
-                    filter: TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, vanity));
-                var queryResult = await tblUrls.ExecuteQuerySegmentedAsync(query, token);
-                shortUrlEntity = queryResult.Results.FirstOrDefault();
-            } while (token != null);
+            var entities = new List<ShortUrlEntity>();
+            var tableClient = GetUrlsTable();
 
+            var pages = tableClient.QueryAsync<ShortUrlEntity>(filter: "RowKey ne \'KEY\'", cancellationToken: cancellationToken);
+            //var pages = tableClient.QueryAsync<ShortUrlEntity>(x => x.RowKey != "KEY", cancellationToken: cancellationToken);// Alternative
+            await foreach (var page in pages)
+            {
+                entities.Add(page);
+            }
+            return entities;
+        }
+
+        public async Task<ShortUrlEntity> GetShortUrlEntityByVanityAsync(string vanity, CancellationToken cancellationToken = default)
+        {
+            var entities = new List<ShortUrlEntity>();
+            var tableClient = GetUrlsTable();
+
+            var pages = tableClient.QueryAsync<ShortUrlEntity>(x => x.RowKey == vanity, cancellationToken: cancellationToken);// Alternative           
+            await foreach (var page in pages)
+            {
+                entities.Add(page);
+            }
+            var shortUrlEntity = entities.FirstOrDefault();
             return shortUrlEntity;
         }
-        public async Task SaveClickStatsEntity(ClickStatsEntity newStats)
+
+        public async Task SaveClickStatsEntityAsync(ClickStatsEntity newStats, CancellationToken cancellationToken = default)
         {
-            TableOperation insOperation = TableOperation.InsertOrMerge(newStats);
-            TableResult result = await GetStatsTable().ExecuteAsync(insOperation);
+            var tableClient = GetStatsTable();
+            _ = await tableClient.UpsertEntityAsync(newStats, cancellationToken: cancellationToken);
         }
 
-        public async Task<ShortUrlEntity> SaveShortUrlEntity(ShortUrlEntity newShortUrl)
+        public async Task<ShortUrlEntity> SaveShortUrlEntityAsync(ShortUrlEntity newShortUrl, CancellationToken cancellationToken = default)
         {
-           
-            // serializing the collection easier on json shares
-            //newShortUrl.SchedulesPropertyRaw = JsonSerializer.Serialize<List<Schedule>>(newShortUrl.Schedules);
-
-            TableOperation insOperation = TableOperation.InsertOrMerge(newShortUrl);
-            TableResult result = await GetUrlsTable().ExecuteAsync(insOperation);
-            ShortUrlEntity eShortUrl = result.Result as ShortUrlEntity;
-            return eShortUrl;
+            var tableClient = GetUrlsTable();
+            var x = await tableClient.UpsertEntityAsync(newShortUrl, cancellationToken: cancellationToken);
+            return newShortUrl;//TODO: hkilic - Calismayabilir!
         }
 
-        public async Task<bool> IfShortUrlEntityExistByVanity(string vanity)
+        public async Task<bool> IfShortUrlEntityExistByVanityAsync(string vanity)
         {
-            ShortUrlEntity shortUrlEntity = await GetShortUrlEntityByVanity(vanity);
+            var shortUrlEntity = await GetShortUrlEntityByVanityAsync(vanity);
             return (shortUrlEntity != null);
         }
 
-        public async Task<bool> IfShortUrlEntityExist(ShortUrlEntity row)
+        public async Task<bool> IfShortUrlEntityExistAsync(ShortUrlEntity row)
         {
-            ShortUrlEntity eShortUrl = await GetShortUrlEntity(row);
+            ShortUrlEntity eShortUrl = await GetShortUrlEntityAsync(row);
             return (eShortUrl != null);
         }
-        public async Task<int> GetNextTableId()
-        {
-            //Get current ID
-            TableOperation selOperation = TableOperation.Retrieve<NextId>("1", "KEY");
-            TableResult result = await GetUrlsTable().ExecuteAsync(selOperation);
-            NextId entity = result.Result as NextId;
 
-            if (entity == null)
+        public async Task<int> GetNextTableIdAsync(CancellationToken cancellationToken = default)
+        {
+            var tableClient = GetUrlsTable();
+            NextId entity = null;
+
+            try
             {
-                entity = new NextId
+                //Get current ID
+                var result = await tableClient.GetEntityAsync<NextId>("1", "KEY", cancellationToken: cancellationToken);
+                entity = result.Value;
+            }
+            catch { }
+
+            entity ??=
+                new NextId
                 {
                     PartitionKey = "1",
                     RowKey = "KEY",
                     Id = 1024
                 };
-            }
+
             entity.Id++;
 
-            //Update
-            TableOperation updOperation = TableOperation.InsertOrMerge(entity);
-
-            // Execute the operation.
-            await GetUrlsTable().ExecuteAsync(updOperation);
+            //UpdateOrInsert
+            _ = await tableClient.UpsertEntityAsync(entity, cancellationToken: cancellationToken);
 
             return entity.Id;
         }
 
-
-        public async Task<ShortUrlEntity> UpdateShortUrlEntity(ShortUrlEntity urlEntity)
+        public async Task<ShortUrlEntity> UpdateShortUrlEntityAsync(ShortUrlEntity urlEntity, CancellationToken cancellationToken = default)
         {
-            ShortUrlEntity originalUrl = await GetShortUrlEntity(urlEntity);
+            ShortUrlEntity originalUrl = await GetShortUrlEntityAsync(urlEntity, cancellationToken);
+            if (originalUrl == null)
+                return null;
+
             originalUrl.Url = urlEntity.Url;
             originalUrl.Title = urlEntity.Title;
-            originalUrl.SchedulesPropertyRaw = JsonSerializer.Serialize<List<Schedule>>(urlEntity.Schedules);
+            originalUrl.SchedulesPropertyRaw = JsonSerializer.Serialize(urlEntity.Schedules);
 
-            return await SaveShortUrlEntity(originalUrl);
+            var result = await SaveShortUrlEntityAsync(originalUrl, cancellationToken);
+            return result;
         }
 
-
-        public async Task<List<ClickStatsEntity>> GetAllStatsByVanity(string vanity)
+        public async Task<IList<ClickStatsEntity>> GetAllStatsByVanityAsync(string vanity, CancellationToken cancellationToken = default)
         {
-            var tblUrls = GetStatsTable();
-            TableContinuationToken token = null;
-            var lstShortUrl = new List<ClickStatsEntity>();
-            do
+            var entities = new List<ClickStatsEntity>();
+            var tableClient = GetStatsTable();
+
+            var pages = tableClient.QueryAsync<ClickStatsEntity>(filter: $"PartitionKey eq \'{vanity}\'", cancellationToken: cancellationToken);
+            await foreach (var page in pages)
             {
-                TableQuery<ClickStatsEntity> rangeQuery;
-
-                if(string.IsNullOrEmpty(vanity)){
-                    rangeQuery = new TableQuery<ClickStatsEntity>();
-                }
-                else{
-                    rangeQuery = new TableQuery<ClickStatsEntity>().Where(
-                    filter: TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, vanity));
-                }
-
-                var queryResult = await tblUrls.ExecuteQuerySegmentedAsync(rangeQuery, token);
-                lstShortUrl.AddRange(queryResult.Results as List<ClickStatsEntity>);
-                token = queryResult.ContinuationToken;
-            } while (token != null);
-            return lstShortUrl;
+                entities.Add(page);
+            }
+            return entities;
         }
 
-
-        public async Task<ShortUrlEntity> ArchiveShortUrlEntity(ShortUrlEntity urlEntity)
+        public async Task<ShortUrlEntity> ArchiveShortUrlEntityAsync(ShortUrlEntity urlEntity, CancellationToken cancellationToken = default)
         {
-            ShortUrlEntity originalUrl = await GetShortUrlEntity(urlEntity);
+            ShortUrlEntity originalUrl = await GetShortUrlEntityAsync(urlEntity, cancellationToken);
             originalUrl.IsArchived = true;
 
-            return await SaveShortUrlEntity(originalUrl);
+            var result = await SaveShortUrlEntityAsync(originalUrl, cancellationToken);
+            return result;
         }
     }
 }

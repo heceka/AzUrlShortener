@@ -15,22 +15,19 @@ Output:
     }
 */
 
+using System.Net;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Messages;
+using Cloud5mins.ShortenerTools.Core.Models;
+using Cloud5mins.ShortenerTools.Functions.Utils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
     public class UrlList
     {
-
         private readonly ILogger _logger;
         private readonly ShortenerSettings _settings;
 
@@ -42,9 +39,9 @@ namespace Cloud5mins.ShortenerTools.Functions
 
         [Function("UrlList")]
         public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/UrlList")] HttpRequestData req, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/UrlList")] HttpRequestData req, ExecutionContext context)
         {
-            _logger.LogInformation($"Starting UrlList...");
+            _logger.LogInformation("Starting UrlList...");
 
             var result = new ListResponse();
             string userId = string.Empty;
@@ -53,7 +50,7 @@ namespace Cloud5mins.ShortenerTools.Functions
 
             try
             {
-                result.UrlList = await stgHelper.GetAllShortUrlEntities();
+                result.UrlList = await stgHelper.GetAllShortUrlsAsync();
                 result.UrlList = result.UrlList.Where(p => !(p.IsArchived ?? false)).ToList();
                 var host = string.IsNullOrEmpty(_settings.CustomDomain) ? req.Url.Host : _settings.CustomDomain;
                 foreach (ShortUrlEntity url in result.UrlList)

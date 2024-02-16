@@ -28,18 +28,17 @@ Output:
     }
 */
 
+using System.Net;
+using System.Text.Json;
 using Cloud5mins.ShortenerTools.Core.Domain;
+using Cloud5mins.ShortenerTools.Core.Models;
+using Cloud5mins.ShortenerTools.Functions.Utils;
+
 // using Microsoft.Azure.WebJobs;
 // using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Net;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
@@ -57,10 +56,9 @@ namespace Cloud5mins.ShortenerTools.Functions
         [Function("UrlUpdate")]
         public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UrlUpdate")] HttpRequestData req,
-                                    ExecutionContext context
-                                )
+        ExecutionContext context)
         {
-            _logger.LogInformation($"HTTP trigger - UrlUpdate");
+            _logger.LogInformation("HTTP trigger - UrlUpdate");
 
             string userId = string.Empty;
             ShortUrlEntity input;
@@ -70,9 +68,7 @@ namespace Cloud5mins.ShortenerTools.Functions
             {
                 // Validation of the inputs
                 if (req == null)
-                {
                     return req.CreateResponse(HttpStatusCode.NotFound);
-                }
 
                 using (var reader = new StreamReader(req.Body))
                 {
@@ -102,7 +98,7 @@ namespace Cloud5mins.ShortenerTools.Functions
 
                 StorageTableHelper stgHelper = new StorageTableHelper(_settings.DataStorage);
 
-                result = await stgHelper.UpdateShortUrlEntity(input);
+                result = await stgHelper.UpdateShortUrlEntityAsync(input);
                 var host = string.IsNullOrEmpty(_settings.CustomDomain) ? req.Url.Host : _settings.CustomDomain.ToString();
                 result.ShortUrl = Utility.GetShortUrl(host, result.RowKey);
 

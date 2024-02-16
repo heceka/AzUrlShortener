@@ -20,17 +20,15 @@ Output:
     }
 */
 
+using System.Net;
+using System.Text.Json;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Messages;
+using Cloud5mins.ShortenerTools.Core.Models;
+using Cloud5mins.ShortenerTools.Functions.Utils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Net;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
@@ -42,20 +40,19 @@ namespace Cloud5mins.ShortenerTools.Functions
 
         public UrlCreate(ILoggerFactory loggerFactory, ShortenerSettings settings)
         {
-            _logger = loggerFactory.CreateLogger<UrlList>();
+            _logger = loggerFactory.CreateLogger<UrlCreate>();
             _settings = settings;
         }
 
         [Function("UrlCreate")]
         public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/UrlCreate")] HttpRequestData req,
-            ExecutionContext context
-        )
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UrlCreate")] HttpRequestData req,
+            ExecutionContext context)
         {
-            _logger.LogInformation($"__trace creating shortURL: {req}");
+            _logger.LogInformation("__trace creating shortURL: {req}", req);
             string userId = string.Empty;
             ShortRequest input;
-            var result = new ShortResponse();
+            ShortResponse result;
 
             try
             {
@@ -97,13 +94,12 @@ namespace Cloud5mins.ShortenerTools.Functions
                 string vanity = string.IsNullOrWhiteSpace(input.Vanity) ? "" : input.Vanity.Trim();
                 string title = string.IsNullOrWhiteSpace(input.Title) ? "" : input.Title.Trim();
 
-
                 ShortUrlEntity newRow;
 
-                if (!string.IsNullOrEmpty(vanity))
+                if (!string.IsNullOrWhiteSpace(vanity))
                 {
                     newRow = new ShortUrlEntity(longUrl, vanity, title, input.Schedules);
-                    if (await stgHelper.IfShortUrlEntityExist(newRow))
+                    if (await stgHelper.IfShortUrlEntityExistAsync(newRow))
                     {
                         var badResponse = req.CreateResponse(HttpStatusCode.Conflict);
                         await badResponse.WriteAsJsonAsync(new { Message = "This Short URL already exist." });
@@ -115,9 +111,9 @@ namespace Cloud5mins.ShortenerTools.Functions
                     newRow = new ShortUrlEntity(longUrl, await Utility.GetValidEndUrl(vanity, stgHelper), title, input.Schedules);
                 }
 
-                await stgHelper.SaveShortUrlEntity(newRow);
+                await stgHelper.SaveShortUrlEntityAsync(newRow);
 
-                var host = string.IsNullOrEmpty(_settings.CustomDomain) ? req.Url.Host : _settings.CustomDomain.ToString();
+                var host = string.IsNullOrWhiteSpace(_settings.CustomDomain) ? req.Url.Host : _settings.CustomDomain.ToString();
                 result = new ShortResponse(host, newRow.Url, newRow.RowKey, newRow.Title);
 
                 _logger.LogInformation("Short Url created.");
