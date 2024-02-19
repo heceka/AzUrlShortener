@@ -1,4 +1,4 @@
-using Cloud5mins.ShortenerTools.Core.Domain;
+using Cloud5mins.ShortenerTools.Core.Domain.Models;
 
 namespace Cloud5mins.ShortenerTools.Core.Messages
 {

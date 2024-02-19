@@ -16,6 +16,7 @@ Output:
 */
 
 using Cloud5mins.ShortenerTools.Core.Domain;
+using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Cloud5mins.ShortenerTools.Core.Messages;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -53,7 +54,7 @@ namespace Cloud5mins.ShortenerTools.Functions
 
             try
             {
-                result.UrlList = await stgHelper.GetAllShortUrlEntities();
+                result.UrlList = await stgHelper.GetAllShortUrlsAsync();
                 result.UrlList = result.UrlList.Where(p => !(p.IsArchived ?? false)).ToList();
                 var host = string.IsNullOrEmpty(_settings.CustomDomain) ? req.Url.Host : _settings.CustomDomain;
                 foreach (ShortUrlEntity url in result.UrlList)

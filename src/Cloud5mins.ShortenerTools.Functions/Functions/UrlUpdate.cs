@@ -29,6 +29,7 @@ Output:
 */
 
 using Cloud5mins.ShortenerTools.Core.Domain;
+using Cloud5mins.ShortenerTools.Core.Domain.Models;
 // using Microsoft.Azure.WebJobs;
 // using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.Functions.Worker;
@@ -102,7 +103,7 @@ namespace Cloud5mins.ShortenerTools.Functions
 
                 StorageTableHelper stgHelper = new StorageTableHelper(_settings.DataStorage);
 
-                result = await stgHelper.UpdateShortUrlEntity(input);
+                result = await stgHelper.UpdateShortUrlEntityAsync(input);
                 var host = string.IsNullOrEmpty(_settings.CustomDomain) ? req.Url.Host : _settings.CustomDomain.ToString();
                 result.ShortUrl = Utility.GetShortUrl(host, result.RowKey);
 

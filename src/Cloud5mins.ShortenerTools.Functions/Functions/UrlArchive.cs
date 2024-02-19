@@ -26,6 +26,7 @@ Output:
 */
 
 using Cloud5mins.ShortenerTools.Core.Domain;
+using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
@@ -80,7 +81,7 @@ namespace Cloud5mins.ShortenerTools.Functions
 
                 StorageTableHelper stgHelper = new StorageTableHelper(_settings.DataStorage);
 
-                result = await stgHelper.ArchiveShortUrlEntity(input);
+                result = await stgHelper.ArchiveShortUrlEntityAsync(input);
             }
             catch (Exception ex)
             {

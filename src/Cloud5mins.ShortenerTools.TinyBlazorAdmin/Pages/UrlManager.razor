@@ -1,6 +1,7 @@
 @page "/urlmanager"
 
 @using Cloud5mins.ShortenerTools.Core.Domain
+@using Cloud5mins.ShortenerTools.Core.Domain.Models
 @using Cloud5mins.ShortenerTools.Core.Messages;
 @using Microsoft.AspNetCore.Authorization
 @using Syncfusion.Blazor.Grids
@@ -192,7 +193,7 @@ else
     ShortUrlRequest shortUrlRequest = new ShortUrlRequest();
     ShortUrlEntity editedUrl;
     SfGrid<ShortUrlEntity> grdUrls;
-    public List<ShortUrlEntity> gridData { get; set; }
+    public IList<ShortUrlEntity> gridData { get; set; }
 
 
     protected override async Task OnInitializedAsync()

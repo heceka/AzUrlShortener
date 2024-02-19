@@ -25,9 +25,9 @@ namespace Cloud5mins.ShortenerTools
         {
             if (string.IsNullOrEmpty(vanity))
             {
-                var newKey = await stgHelper.GetNextTableId();
+                var newKey = await stgHelper.GetNextTableIdAsync();
                 string getCode() => Encode(newKey);
-                if (await stgHelper.IfShortUrlEntityExistByVanity(getCode()))
+                if (await stgHelper.IfShortUrlEntityExistByVanityAsync(getCode()))
                     return await GetValidEndUrl(vanity, stgHelper);
 
                 return string.Join(string.Empty, getCode());

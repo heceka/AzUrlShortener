@@ -21,6 +21,7 @@ Output:
 */
 
 using Cloud5mins.ShortenerTools.Core.Domain;
+using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Cloud5mins.ShortenerTools.Core.Messages;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -103,7 +104,7 @@ namespace Cloud5mins.ShortenerTools.Functions
                 if (!string.IsNullOrEmpty(vanity))
                 {
                     newRow = new ShortUrlEntity(longUrl, vanity, title, input.Schedules);
-                    if (await stgHelper.IfShortUrlEntityExist(newRow))
+                    if (await stgHelper.IfShortUrlEntityExistAsync(newRow))
                     {
                         var badResponse = req.CreateResponse(HttpStatusCode.Conflict);
                         await badResponse.WriteAsJsonAsync(new { Message = "This Short URL already exist." });
@@ -115,7 +116,7 @@ namespace Cloud5mins.ShortenerTools.Functions
                     newRow = new ShortUrlEntity(longUrl, await Utility.GetValidEndUrl(vanity, stgHelper), title, input.Schedules);
                 }
 
-                await stgHelper.SaveShortUrlEntity(newRow);
+                await stgHelper.SaveShortUrlEntityAsync(newRow);
 
                 var host = string.IsNullOrEmpty(_settings.CustomDomain) ? req.Url.Host : _settings.CustomDomain.ToString();
                 result = new ShortResponse(host, newRow.Url, newRow.RowKey, newRow.Title);

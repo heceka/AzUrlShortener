@@ -1,7 +1,6 @@
 using Cronos;
-using System;
 
-namespace Cloud5mins.ShortenerTools.Core.Domain
+namespace Cloud5mins.ShortenerTools.Core.Domain.Models
 {
     public class Schedule
     {
@@ -18,7 +17,7 @@ namespace Cloud5mins.ShortenerTools.Core.Domain
             var length = AlternativeUrl.ToString().Length;
             if (length >= max)
             {
-                return string.Concat(AlternativeUrl.Substring(0, max-1), "...");
+                return string.Concat(AlternativeUrl.Substring(0, max - 1), "...");
             }
             return AlternativeUrl;
         }
