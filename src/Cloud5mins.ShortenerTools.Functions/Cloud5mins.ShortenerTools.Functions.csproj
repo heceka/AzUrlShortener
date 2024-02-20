@@ -2,9 +2,11 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<AzureFunctionsVersion>v4</AzureFunctionsVersion>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<OutputType>Exe</OutputType>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
+		<Platforms>x64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="cronos" Version="0.8.3" />

@@ -40,7 +40,7 @@ namespace Cloud5mins.ShortenerTools.Functions
 
         [Function("UrlList")]
         public async Task<HttpResponseData> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "UrlList")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "UrlList")] HttpRequestData req,
             ExecutionContext context)
         {
             _logger.LogInformation($"Starting UrlList...");
