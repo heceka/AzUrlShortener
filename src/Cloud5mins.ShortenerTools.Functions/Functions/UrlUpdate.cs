@@ -28,19 +28,16 @@ Output:
     }
 */
 
+using System.Net;
+using System.Text.Json;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
+using Cloud5mins.ShortenerTools.Functions.Utils;
 // using Microsoft.Azure.WebJobs;
 // using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Net;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
@@ -57,13 +54,12 @@ namespace Cloud5mins.ShortenerTools.Functions
 
         [Function("UrlUpdate")]
         public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UrlUpdate")] HttpRequestData req,
-                                    ExecutionContext context
-                                )
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "UrlUpdate")] HttpRequestData req,
+            ExecutionContext context)
         {
             _logger.LogInformation($"HTTP trigger - UrlUpdate");
 
-            string userId = string.Empty;
+            //string userId = string.Empty;
             ShortUrlEntity input;
             ShortUrlEntity result;
 
@@ -71,18 +67,14 @@ namespace Cloud5mins.ShortenerTools.Functions
             {
                 // Validation of the inputs
                 if (req == null)
-                {
                     return req.CreateResponse(HttpStatusCode.NotFound);
-                }
 
                 using (var reader = new StreamReader(req.Body))
                 {
                     var strBody = await reader.ReadToEndAsync();
                     input = JsonSerializer.Deserialize<ShortUrlEntity>(strBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     if (input == null)
-                    {
                         return req.CreateResponse(HttpStatusCode.NotFound);
-                    }
                 }
 
                 // If the Url parameter only contains whitespaces or is empty return with BadRequest.

@@ -20,22 +20,18 @@ Output:
     }
 */
 
+using System.Net;
+using System.Text.Json;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Cloud5mins.ShortenerTools.Core.Messages;
+using Cloud5mins.ShortenerTools.Functions.Utils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Net;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
-
     public class UrlCreate
     {
         private readonly ILogger _logger;
@@ -49,9 +45,8 @@ namespace Cloud5mins.ShortenerTools.Functions
 
         [Function("UrlCreate")]
         public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/UrlCreate")] HttpRequestData req,
-            ExecutionContext context
-        )
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "UrlCreate")] HttpRequestData req,
+            ExecutionContext context)
         {
             _logger.LogInformation($"__trace creating shortURL: {req}");
             string userId = string.Empty;

@@ -25,23 +25,18 @@ Output:
 
 */
 
+using System.Net;
+using System.Text.Json;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Net;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
     public class UrlArchive
     {
-
         private readonly ILogger _logger;
         private readonly ShortenerSettings _settings;
 
@@ -53,34 +48,29 @@ namespace Cloud5mins.ShortenerTools.Functions
 
         [Function("UrlArchive")]
         public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UrlArchive")] HttpRequestData req,
-        ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "UrlArchive")] HttpRequestData req,
+            ExecutionContext context)
         {
             _logger.LogInformation($"HTTP trigger - UrlArchive");
 
-            string userId = string.Empty;
+            //string userId = string.Empty;
             ShortUrlEntity input;
             ShortUrlEntity result;
             try
             {
                 // Validation of the inputs
                 if (req == null)
-                {
                     return req.CreateResponse(HttpStatusCode.NotFound);
-                }
 
                 using (var reader = new StreamReader(req.Body))
                 {
                     var body = await reader.ReadToEndAsync();
                     input = JsonSerializer.Deserialize<ShortUrlEntity>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     if (input == null)
-                    {
                         return req.CreateResponse(HttpStatusCode.NotFound);
-                    }
                 }
 
-                StorageTableHelper stgHelper = new StorageTableHelper(_settings.DataStorage);
-
+                var stgHelper = new StorageTableHelper(_settings.DataStorage);
                 result = await stgHelper.ArchiveShortUrlEntityAsync(input);
             }
             catch (Exception ex)

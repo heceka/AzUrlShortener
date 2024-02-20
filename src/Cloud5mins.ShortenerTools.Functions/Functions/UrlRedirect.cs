@@ -1,11 +1,9 @@
+using System.Net;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
@@ -22,13 +20,11 @@ namespace Cloud5mins.ShortenerTools.Functions
 
         [Function("UrlRedirect")]
         public async Task<HttpResponseData> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{shortUrl}")]
-            HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Redirect/{shortUrl}")] HttpRequestData req,
             string shortUrl,
             ExecutionContext context)
         {
             string redirectUrl = "https://azure.com";
-
 
             if (!string.IsNullOrWhiteSpace(shortUrl))
             {
