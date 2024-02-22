@@ -33,8 +33,6 @@ using System.Text.Json;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Cloud5mins.ShortenerTools.Functions.Utils;
-// using Microsoft.Azure.WebJobs;
-// using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;

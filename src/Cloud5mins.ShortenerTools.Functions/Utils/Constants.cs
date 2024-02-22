@@ -2,6 +2,11 @@
 {
     class Constants
     {
+        internal struct ConfigKeys
+        {
+            internal const string ShortenerSettings = "ShortenerSettings";
+        }
+
         internal struct Authorization
         {
             internal struct Header

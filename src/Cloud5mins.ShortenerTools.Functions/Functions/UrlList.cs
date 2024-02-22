@@ -22,13 +22,15 @@ using Cloud5mins.ShortenerTools.Core.Messages;
 using Cloud5mins.ShortenerTools.Functions.Utils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
     public class UrlList
     {
-
         private readonly ILogger _logger;
         private readonly ShortenerSettings _settings;
 
@@ -39,6 +41,8 @@ namespace Cloud5mins.ShortenerTools.Functions
         }
 
         [Function("UrlList")]
+        [OpenApiOperation(operationId: "UrlList", tags: ["UrlList"], Summary = "UrlList", Description = "This returns list of Urls.", Visibility = OpenApiVisibilityType.Important)]
+        [OpenApiSecurity(Constants.Authorization.Header.FunctionsKey, SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Header)]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "UrlList")] HttpRequestData req,
             ExecutionContext context)

@@ -1,4 +1,6 @@
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
+using Cloud5mins.ShortenerTools.Functions.Utils;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,29 +9,21 @@ namespace Cloud5mins.ShortenerTools
 {
     public class Program
     {
-        public static void Main()
+        public static async Task Main()
         {
-            ShortenerSettings shortenerSettings = null;
-
             var host = new HostBuilder()
                 .ConfigureFunctionsWorkerDefaults()
                 .ConfigureServices((context, services) =>
                 {
-                    // Add our global configuration instance
-                    services.AddSingleton(options =>
-                    {
-                        var configuration = context.Configuration;
-                        shortenerSettings = new ShortenerSettings();
-                        configuration.Bind(shortenerSettings);
-                        return configuration;
-                    });
+                    services.AddApplicationInsightsTelemetryWorkerService();
+                    services.ConfigureFunctionsApplicationInsights();
 
-                    // Add our configuration class
-                    services.AddSingleton(options => { return shortenerSettings; });
+                    var shortenerSettings = context.Configuration.GetSection(Constants.ConfigKeys.ShortenerSettings).Get<ShortenerSettings>();
+                    services.AddSingleton(shortenerSettings);
                 })
                 .Build();
 
-            host.Run();
+            await host.RunAsync();
         }
     }
 }
