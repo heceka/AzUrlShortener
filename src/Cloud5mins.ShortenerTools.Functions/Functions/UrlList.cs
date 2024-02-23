@@ -16,6 +16,7 @@ Output:
 */
 
 using System.Net;
+using System.Security.Claims;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Cloud5mins.ShortenerTools.Core.Messages;
@@ -42,12 +43,20 @@ namespace Cloud5mins.ShortenerTools.Functions
 
         [Function("UrlList")]
         [OpenApiOperation(operationId: "UrlList", tags: ["UrlList"], Summary = "UrlList", Description = "This returns list of Urls.", Visibility = OpenApiVisibilityType.Important)]
-        [OpenApiSecurity(Constants.Authorization.Header.FunctionsKey, SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Header)]
+        [OpenApiSecurity(Constants.Authorizations.OpenApiSecurity.FunctionKey, SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Header)]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "UrlList")] HttpRequestData req,
-            ExecutionContext context)
+            ClaimsPrincipal principal)
         {
             _logger.LogInformation($"Starting UrlList...");
+
+            // This API endpoint requires the "Greeting.Read" scope to be present, if it is
+            // not, then reject the request with a 403.
+            if (!principal.Claims.Any(c => c.Type == "http://schemas.microsoft.com/identity/claims/scope" && c.Value.Split(' ').Contains(".default")))
+            {
+                var forbiddenResponse = req.CreateResponse(HttpStatusCode.Forbidden);
+                return forbiddenResponse;
+            }
 
             var result = new ListResponse();
             string userId = string.Empty;
