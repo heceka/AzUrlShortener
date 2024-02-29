@@ -1,8 +1,11 @@
+using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Cloud5mins.ShortenerTools.Functions.Configurations;
-using Cloud5mins.ShortenerTools.Functions.Middlewares;
+using Cloud5mins.ShortenerTools.Functions.Extensions;
+using Cloud5mins.ShortenerTools.Functions.Utils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenApi.Extensions;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,33 +18,40 @@ namespace Cloud5mins.ShortenerTools
         public static async Task Main()
         {
             var host = new HostBuilder()
-                .ConfigureFunctionsWorkerDefaults(builder =>
+                .ConfigureFunctionsWorkerDefaults(worker =>
                 {
-                    builder.UseMiddleware<AuthenticationMiddleware>();
-                    //builder.UseMiddleware<AuthorizationMiddleware>();
+                    worker.UseNewtonsoftJson();
                 }, options =>
                 {
-                    /*
-                     * By default, exceptions thrown by your code can end up wrapped in an RpcException.
-                     * To remove this extra layer, set the EnableUserCodeException property to "true" as part of configuring the builder
-                    */
-                    //options.EnableUserCodeException = true;
+                    options.EnableUserCodeException = true; // By default, exceptions thrown by your code can end up wrapped in an RpcException.
+                                                            // Set the EnableUserCodeException property to "true" as part of configuring the builder.
                 })
                 .ConfigureServices((context, services) =>
                 {
                     services.AddApplicationInsightsTelemetryWorkerService();
                     services.ConfigureFunctionsApplicationInsights();
 
-                    services
-                        .AddOptions<AzureAuthenticationOptions>()
-                        .Configure<IConfiguration>((settings, configuration) =>
-                        {
-                            configuration.GetSection(ConfigKeys.AzureAuthenticationOptions).Bind(settings);
-                        });
+                    services.AddCustomOpenApiService();
 
-                    //TODO: hkilic - IOptions<T> seklinde duzenlenecek. https://learn.microsoft.com/en-us/azure/azure-functions/functions-dotnet-dependency-injection#working-with-options-and-settings
-                    var shortenerSettings = context.Configuration.GetSection(ConfigKeys.ShortenerSettings).Get<ShortenerSettings>();
-                    services.AddSingleton(shortenerSettings);
+                    services.AddOptions<ShortenerSettings>()
+                    .Configure<IConfiguration>((settings, configuration) =>
+                    {
+                        configuration.GetSection(ConfigKeys.ShortenerSettings).Bind(settings);
+                    });
+
+                    services.AddOptions<AzureAdOptions>()
+                    .Configure<IConfiguration>((settings, configuration) =>
+                    {
+                        configuration.GetSection(ConfigKeys.AzureAdOptions).Bind(settings);
+                    });
+
+                    services.AddAzureClients(clientBuilder =>
+                    {
+                        clientBuilder.AddTableServiceClient(context.Configuration.GetSection(ConfigKeys.AzureWebJobsStorage));
+                    });
+
+                    services.AddScoped<AzureADJwtBearerValidation>();
+                    services.AddSingleton<StorageTableHelper>();
                 })
                 .ConfigureOpenApi()
                 .Build();

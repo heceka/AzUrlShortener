@@ -5,27 +5,18 @@ using Cloud5mins.ShortenerTools.Core.Domain.Models;
 
 namespace Cloud5mins.ShortenerTools.Core.Domain
 {
-    public class StorageTableHelper
+    public class StorageTableHelper(TableServiceClient tableServiceClient)
     {
         const string TableUrlsDetails = "UrlsDetails";
         const string TableClickStats = "ClickStats";
 
-        //private readonly string _storageConnectionString;
-        private readonly TableServiceClient _tableServiceClient;
-
-        public StorageTableHelper() { }
-        public StorageTableHelper(string storageConnectionString)
-        {
-            _tableServiceClient = new TableServiceClient(storageConnectionString);
-        }
-
         private TableClient GetTableClient(string tableName)
         {
             // Create a new table. The TableItem class stores properties of the created table.
-            //TableItem table = _tableServiceClient.CreateTableIfNotExists(tableName);
+            //TableItem table = tableServiceClient.CreateTableIfNotExists(tableName);
 
             // Get a reference to the TableClient from the service client instance.
-            var tableClient = _tableServiceClient.GetTableClient(tableName);
+            var tableClient = tableServiceClient.GetTableClient(tableName);
             // Create the table if it doesn't exist.
             tableClient.CreateIfNotExists();
 
@@ -42,6 +33,20 @@ namespace Cloud5mins.ShortenerTools.Core.Domain
         {
             var table = GetTableClient(TableClickStats);
             return table;
+        }
+
+        private async Task<ShortUrlEntity> GetShortUrlEntityByVanityAsync(string vanity, CancellationToken cancellationToken = default)
+        {
+            var entities = new List<ShortUrlEntity>();
+            var tableClient = GetUrlsTable();
+
+            var pages = tableClient.QueryAsync<ShortUrlEntity>(x => x.RowKey == vanity, cancellationToken: cancellationToken);// Alternative           
+            await foreach (var page in pages)
+            {
+                entities.Add(page);
+            }
+            var shortUrlEntity = entities.FirstOrDefault();
+            return shortUrlEntity;
         }
 
         public async Task<ShortUrlEntity> GetShortUrlEntityAsync(ShortUrlEntity row, CancellationToken cancellationToken = default)
@@ -71,20 +76,6 @@ namespace Cloud5mins.ShortenerTools.Core.Domain
                 entities.Add(page);
             }
             return entities;
-        }
-
-        public async Task<ShortUrlEntity> GetShortUrlEntityByVanityAsync(string vanity, CancellationToken cancellationToken = default)
-        {
-            var entities = new List<ShortUrlEntity>();
-            var tableClient = GetUrlsTable();
-
-            var pages = tableClient.QueryAsync<ShortUrlEntity>(x => x.RowKey == vanity, cancellationToken: cancellationToken);// Alternative           
-            await foreach (var page in pages)
-            {
-                entities.Add(page);
-            }
-            var shortUrlEntity = entities.FirstOrDefault();
-            return shortUrlEntity;
         }
 
         public async Task SaveClickStatsEntityAsync(ClickStatsEntity newStats, CancellationToken cancellationToken = default)

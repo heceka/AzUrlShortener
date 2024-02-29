@@ -1,8 +1,8 @@
 ﻿namespace Cloud5mins.ShortenerTools.Functions.Configurations
 {
-    internal class AzureAuthenticationOptions
+    internal class AzureAdOptions
     {
-        public string MetadataAddress { get; set; }
+        public string WellKnownEndpoint { get; set; }
         public string ClientId { get; set; }
     }
 }

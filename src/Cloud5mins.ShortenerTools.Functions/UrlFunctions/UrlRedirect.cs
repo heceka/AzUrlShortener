@@ -3,44 +3,43 @@ using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
 
-namespace Cloud5mins.ShortenerTools.Functions
+namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
 {
-    public class UrlRedirect
+    public class UrlRedirect(ILoggerFactory loggerFactory,
+        StorageTableHelper storageTableHelper,
+        IOptions<ShortenerSettings> options)
     {
-        private readonly ILogger _logger;
-        private readonly ShortenerSettings _settings;
-
-        public UrlRedirect(ILoggerFactory loggerFactory, ShortenerSettings settings)
-        {
-            _logger = loggerFactory.CreateLogger<UrlRedirect>();
-            _settings = settings;
-        }
+        private readonly ILogger _logger = loggerFactory.CreateLogger<UrlRedirect>();
+        private readonly ShortenerSettings _settings = options.Value;
 
         [Function("UrlRedirect")]
+        [OpenApiOperation(operationId: nameof(UrlRedirect), tags: [nameof(UrlRedirect)], Summary = "Redirect URL", Description = "This redirects URL.", Visibility = OpenApiVisibilityType.Important)]        
+        [OpenApiResponseWithoutBody(HttpStatusCode.Redirect)]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Redirect/{shortUrl}")] HttpRequestData req,
-            string shortUrl,
-            ExecutionContext context)
+            string shortUrl)
         {
-            string redirectUrl = "https://azure.com";
+            string redirectUrl = "https://www.opet.com.tr";
 
             if (!string.IsNullOrWhiteSpace(shortUrl))
             {
                 redirectUrl = _settings.DefaultRedirectUrl ?? redirectUrl;
 
-                StorageTableHelper stgHelper = new StorageTableHelper(_settings.DataStorage);
-
                 var tempUrl = new ShortUrlEntity(string.Empty, shortUrl);
-                var newUrl = await stgHelper.GetShortUrlEntityAsync(tempUrl);
+                var newUrl = await storageTableHelper.GetShortUrlEntityAsync(tempUrl);
 
                 if (newUrl != null)
                 {
                     _logger.LogInformation($"Found it: {newUrl.Url}");
                     newUrl.Clicks++;
-                    await stgHelper.SaveClickStatsEntityAsync(new ClickStatsEntity(newUrl.RowKey));
-                    await stgHelper.SaveShortUrlEntityAsync(newUrl);
+                    await storageTableHelper.SaveClickStatsEntityAsync(new ClickStatsEntity(newUrl.RowKey));
+                    await storageTableHelper.SaveShortUrlEntityAsync(newUrl);
                     redirectUrl = WebUtility.UrlDecode(newUrl.ActiveUrl);
                 }
             }
@@ -52,7 +51,6 @@ namespace Cloud5mins.ShortenerTools.Functions
             var res = req.CreateResponse(HttpStatusCode.Redirect);
             res.Headers.Add("Location", redirectUrl);
             return res;
-
         }
     }
 }

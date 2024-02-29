@@ -1,26 +1,5 @@
-/*
-```c#
-Input:
-
-    {
-        // [Required] The url you wish to have a short version for
-        "url": "https://docs.microsoft.com/en-ca/azure/azure-functions/functions-create-your-first-function-visual-studio",
-        
-        // [Optional] Title of the page, or text description of your choice.
-        "title": "Quickstart: Create your first function in Azure using Visual Studio"
-
-        // [Optional] the end of the URL. If nothing one will be generated for you.
-        "vanity": "azFunc"
-    }
-
-Output:
-    {
-        "ShortUrl": "http://c5m.ca/azFunc",
-        "LongUrl": "https://docs.microsoft.com/en-ca/azure/azure-functions/functions-create-your-first-function-visual-studio"
-    }
-*/
-
 using System.Net;
+using System.Net.Mime;
 using System.Text.Json;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
@@ -28,47 +7,58 @@ using Cloud5mins.ShortenerTools.Core.Messages;
 using Cloud5mins.ShortenerTools.Functions.Utils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+using static Cloud5mins.ShortenerTools.Functions.Utils.Constants.Authorizations;
 
-namespace Cloud5mins.ShortenerTools.Functions
+namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
 {
-    public class UrlCreate
+    internal class UrlCreate(ILoggerFactory loggerFactory,
+        AzureADJwtBearerValidation azureADJwtBearerValidation,
+        StorageTableHelper storageTableHelper,
+        IOptions<ShortenerSettings> options)
     {
-        private readonly ILogger _logger;
-        private readonly ShortenerSettings _settings;
-
-        public UrlCreate(ILoggerFactory loggerFactory, ShortenerSettings settings)
+        private readonly ILogger _logger = loggerFactory.CreateLogger<UrlList>();
+        private readonly ShortenerSettings _settings = options.Value;
+        private static readonly JsonSerializerOptions s_readOptions = new()
         {
-            _logger = loggerFactory.CreateLogger<UrlList>();
-            _settings = settings;
-        }
+            PropertyNameCaseInsensitive = true
+        };
 
         [Function("UrlCreate")]
+        [OpenApiOperation(operationId: nameof(UrlCreate), tags: [nameof(UrlCreate)], Summary = "Create URL", Description = "This creates URL.", Visibility = OpenApiVisibilityType.Important)]
+        [OpenApiSecurity(Schemes.Bearer, SecuritySchemeType.Http, BearerFormat = Schemes.BearerFormat, In = OpenApiSecurityLocationType.Header, Name = Headers.Authorization, Scheme = OpenApiSecuritySchemeType.Bearer)]
+        [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(ShortRequest), Description = "URL create model", Required = true)]
+        [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ShortRequest), Description = "Successful operation")]
         public async Task<HttpResponseData> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "UrlCreate")] HttpRequestData req,
-            ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "UrlCreate")] HttpRequestData req)
         {
             _logger.LogInformation($"__trace creating shortURL: {req}");
-            string userId = string.Empty;
+
+            var isValidated = await azureADJwtBearerValidation.ValidateTokenAsync(req.Headers);
+            if (!isValidated)
+            {
+                var unauthorizedResponse = req.CreateResponse(HttpStatusCode.Unauthorized);
+                return unauthorizedResponse;
+            }
+
             ShortRequest input;
-            var result = new ShortResponse();
+            ShortResponse result;
 
             try
             {
-                // Validation of the inputs
                 if (req == null)
-                {
                     return req.CreateResponse(HttpStatusCode.NotFound);
-                }
 
                 using (var reader = new StreamReader(req.Body))
                 {
                     var strBody = await reader.ReadToEndAsync();
-                    input = JsonSerializer.Deserialize<ShortRequest>(strBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    input = JsonSerializer.Deserialize<ShortRequest>(strBody, s_readOptions);
                     if (input == null)
-                    {
                         return req.CreateResponse(HttpStatusCode.NotFound);
-                    }
                 }
 
                 // If the Url parameter only contains whitespaces or is empty return with BadRequest.
@@ -87,19 +77,16 @@ namespace Cloud5mins.ShortenerTools.Functions
                     return badResponse;
                 }
 
-                StorageTableHelper stgHelper = new StorageTableHelper(_settings.DataStorage);
-
                 string longUrl = input.Url.Trim();
                 string vanity = string.IsNullOrWhiteSpace(input.Vanity) ? "" : input.Vanity.Trim();
                 string title = string.IsNullOrWhiteSpace(input.Title) ? "" : input.Title.Trim();
-
 
                 ShortUrlEntity newRow;
 
                 if (!string.IsNullOrEmpty(vanity))
                 {
                     newRow = new ShortUrlEntity(longUrl, vanity, title, input.Schedules);
-                    if (await stgHelper.IfShortUrlEntityExistAsync(newRow))
+                    if (await storageTableHelper.IfShortUrlEntityExistAsync(newRow))
                     {
                         var badResponse = req.CreateResponse(HttpStatusCode.Conflict);
                         await badResponse.WriteAsJsonAsync(new { Message = "This Short URL already exist." });
@@ -107,11 +94,9 @@ namespace Cloud5mins.ShortenerTools.Functions
                     }
                 }
                 else
-                {
-                    newRow = new ShortUrlEntity(longUrl, await Utility.GetValidEndUrl(vanity, stgHelper), title, input.Schedules);
-                }
+                    newRow = new ShortUrlEntity(longUrl, await Utility.GetValidEndUrl(vanity, storageTableHelper), title, input.Schedules);
 
-                await stgHelper.SaveShortUrlEntityAsync(newRow);
+                await storageTableHelper.SaveShortUrlEntityAsync(newRow);
 
                 var host = string.IsNullOrEmpty(_settings.CustomDomain) ? req.Url.Host : _settings.CustomDomain.ToString();
                 result = new ShortResponse(host, newRow.Url, newRow.RowKey, newRow.Title);
@@ -134,3 +119,25 @@ namespace Cloud5mins.ShortenerTools.Functions
         }
     }
 }
+
+/*
+```c#
+Input:
+
+    {
+        // [Required] The url you wish to have a short version for
+        "url": "https://docs.microsoft.com/en-ca/azure/azure-functions/functions-create-your-first-function-visual-studio",
+        
+        // [Optional] Title of the page, or text description of your choice.
+        "title": "Quickstart: Create your first function in Azure using Visual Studio"
+
+        // [Optional] the end of the URL. If nothing one will be generated for you.
+        "vanity": "azFunc"
+    }
+
+Output:
+    {
+        "ShortUrl": "http://c5m.ca/azFunc",
+        "LongUrl": "https://docs.microsoft.com/en-ca/azure/azure-functions/functions-create-your-first-function-visual-studio"
+    }
+*/
