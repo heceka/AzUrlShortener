@@ -27,7 +27,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         [Function("UrlArchive")]
         [OpenApiOperation(operationId: nameof(UrlArchive), tags: [Constants.OpenApi.FunctionTag], Summary = "Archive URL", Description = "This archives URL.", Visibility = OpenApiVisibilityType.Important)]
         [OpenApiSecurity(Schemes.Bearer, SecuritySchemeType.Http, BearerFormat = Schemes.BearerFormat, In = OpenApiSecurityLocationType.Header, Name = Headers.Authorization, Scheme = OpenApiSecuritySchemeType.Bearer)]
-        [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(ShortUrlEntity), Description = "URL click stats by day model", Required = true)]
+        [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(ShortUrlEntity), Description = "Archives model", Required = true)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ShortUrlEntity), Description = "Successful operation")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "UrlArchive")] HttpRequestData req)
