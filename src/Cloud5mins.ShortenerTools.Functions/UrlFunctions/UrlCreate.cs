@@ -29,7 +29,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         };
 
         [Function("UrlCreate")]
-        [OpenApiOperation(operationId: nameof(UrlCreate), tags: [nameof(UrlCreate)], Summary = "Create URL", Description = "This creates URL.", Visibility = OpenApiVisibilityType.Important)]
+        [OpenApiOperation(operationId: nameof(UrlCreate), tags: [Constants.OpenApi.FunctionTag], Summary = "Create URL", Description = "This creates URL.", Visibility = OpenApiVisibilityType.Important)]
         [OpenApiSecurity(Schemes.Bearer, SecuritySchemeType.Http, BearerFormat = Schemes.BearerFormat, In = OpenApiSecurityLocationType.Header, Name = Headers.Authorization, Scheme = OpenApiSecuritySchemeType.Bearer)]
         [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(ShortRequest), Description = "URL create model", Required = true)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ShortRequest), Description = "Successful operation")]

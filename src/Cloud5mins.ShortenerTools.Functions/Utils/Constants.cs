@@ -23,5 +23,10 @@
                 internal const string BearerFormat = "JWT";
             }
         }
+
+        internal struct OpenApi
+        {
+            internal const string FunctionTag = "Functions";
+        }
     }
 }

@@ -28,7 +28,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         };
 
         [Function("UrlUpdate")]
-        [OpenApiOperation(operationId: nameof(UrlUpdate), tags: [nameof(UrlUpdate)], Summary = "Update URL", Description = "This updates URL.", Visibility = OpenApiVisibilityType.Important)]
+        [OpenApiOperation(operationId: nameof(UrlUpdate), tags: [Constants.OpenApi.FunctionTag], Summary = "Update URL", Description = "This updates URL.", Visibility = OpenApiVisibilityType.Important)]
         [OpenApiSecurity(Schemes.Bearer, SecuritySchemeType.Http, BearerFormat = Schemes.BearerFormat, In = OpenApiSecurityLocationType.Header, Name = Headers.Authorization, Scheme = OpenApiSecuritySchemeType.Bearer)]
         [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(ShortUrlEntity), Description = "URL update model", Required = true)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ShortUrlEntity), Description = "Successful operation")]

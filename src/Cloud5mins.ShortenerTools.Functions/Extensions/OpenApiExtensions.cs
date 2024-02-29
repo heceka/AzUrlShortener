@@ -11,36 +11,36 @@ namespace Cloud5mins.ShortenerTools.Functions.Extensions
         internal static void AddCustomOpenApiService(this IServiceCollection services)
         {
             services.AddSingleton<IOpenApiConfigurationOptions>(_ =>
-             {
-                 var options = new OpenApiConfigurationOptions()
-                 {
-                     Info = new OpenApiInfo()
-                     {
-                         Version = DefaultOpenApiConfigurationOptions.GetOpenApiDocVersion(),
-                         Title = $"{DefaultOpenApiConfigurationOptions.GetOpenApiDocTitle()} (Injected)",
-                         Description = DefaultOpenApiConfigurationOptions.GetOpenApiDocDescription(),
-                         TermsOfService = new Uri("https://github.com/Azure/azure-functions-openapi-extension"),
-                         Contact = new OpenApiContact()
-                         {
-                             Name = "Enquiry",
-                             Email = "azfunc-openapi@microsoft.com",
-                             Url = new Uri("https://github.com/Azure/azure-functions-openapi-extension/issues"),
-                         },
-                         License = new OpenApiLicense()
-                         {
-                             Name = "MIT",
-                             Url = new Uri("http://opensource.org/licenses/MIT"),
-                         }
-                     },
-                     Servers = DefaultOpenApiConfigurationOptions.GetHostNames(),
-                     OpenApiVersion = DefaultOpenApiConfigurationOptions.GetOpenApiVersion(),
-                     IncludeRequestingHostName = DefaultOpenApiConfigurationOptions.IsFunctionsRuntimeEnvironmentDevelopment(),
-                     ForceHttps = DefaultOpenApiConfigurationOptions.IsHttpsForced(),
-                     ForceHttp = DefaultOpenApiConfigurationOptions.IsHttpForced(),
-                 };
+            {
+                var options = new OpenApiConfigurationOptions()
+                {
+                    Info = new OpenApiInfo
+                    {
+                        Version = DefaultOpenApiConfigurationOptions.GetOpenApiDocVersion(),
+                        Title = $"{DefaultOpenApiConfigurationOptions.GetOpenApiDocTitle()}",
+                        Description = DefaultOpenApiConfigurationOptions.GetOpenApiDocDescription(),
+                        TermsOfService = new Uri("https://www.magiclick.com"),
+                        Contact = new OpenApiContact
+                        {
+                            Name = "Information",
+                            Email = "info@magiclick.com",
+                            Url = new Uri("https://www.magiclick.com/contact"),
+                        },
+                        License = new OpenApiLicense
+                        {
+                            Name = "MIT",
+                            Url = new Uri("http://opensource.org/licenses/MIT"),
+                        }
+                    },
+                    Servers = DefaultOpenApiConfigurationOptions.GetHostNames(),
+                    OpenApiVersion = DefaultOpenApiConfigurationOptions.GetOpenApiVersion(),
+                    IncludeRequestingHostName = DefaultOpenApiConfigurationOptions.IsFunctionsRuntimeEnvironmentDevelopment(),
+                    ForceHttps = DefaultOpenApiConfigurationOptions.IsHttpsForced(),
+                    ForceHttp = DefaultOpenApiConfigurationOptions.IsHttpForced(),
+                };
 
-                 return options;
-             });
+                return options;
+            });
 
             services.AddSingleton<IOpenApiHttpTriggerAuthorization>(_ =>
             {

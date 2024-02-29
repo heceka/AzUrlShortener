@@ -3,7 +3,6 @@ using System.Net.Mime;
 using System.Text.Json;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
-using Cloud5mins.ShortenerTools.Core.Messages;
 using Cloud5mins.ShortenerTools.Functions.Utils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -26,7 +25,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         };
 
         [Function("UrlArchive")]
-        [OpenApiOperation(operationId: nameof(UrlArchive), tags: [nameof(UrlArchive)], Summary = "Archive URL", Description = "This archives URL.", Visibility = OpenApiVisibilityType.Important)]
+        [OpenApiOperation(operationId: nameof(UrlArchive), tags: [Constants.OpenApi.FunctionTag], Summary = "Archive URL", Description = "This archives URL.", Visibility = OpenApiVisibilityType.Important)]
         [OpenApiSecurity(Schemes.Bearer, SecuritySchemeType.Http, BearerFormat = Schemes.BearerFormat, In = OpenApiSecurityLocationType.Header, Name = Headers.Authorization, Scheme = OpenApiSecuritySchemeType.Bearer)]
         [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(ShortUrlEntity), Description = "URL click stats by day model", Required = true)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ShortUrlEntity), Description = "Successful operation")]

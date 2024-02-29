@@ -1,6 +1,7 @@
 using System.Net;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Domain.Models;
+using Cloud5mins.ShortenerTools.Functions.Utils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
@@ -19,7 +20,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         private readonly ShortenerSettings _settings = options.Value;
 
         [Function("UrlRedirect")]
-        [OpenApiOperation(operationId: nameof(UrlRedirect), tags: [nameof(UrlRedirect)], Summary = "Redirect URL", Description = "This redirects URL.", Visibility = OpenApiVisibilityType.Important)]        
+        [OpenApiOperation(operationId: nameof(UrlRedirect), tags: [Constants.OpenApi.FunctionTag], Summary = "Redirect URL", Description = "This redirects URL.", Visibility = OpenApiVisibilityType.Important)]
         [OpenApiResponseWithoutBody(HttpStatusCode.Redirect)]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Redirect/{shortUrl}")] HttpRequestData req,

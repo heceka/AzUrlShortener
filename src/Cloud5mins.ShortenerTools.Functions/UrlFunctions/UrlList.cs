@@ -24,7 +24,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         private readonly ShortenerSettings _settings = options.Value;
 
         [Function("UrlList")]
-        [OpenApiOperation(operationId: nameof(UrlList), tags: [nameof(UrlList)], Summary = "List of Urls", Description = "This returns list of Urls.", Visibility = OpenApiVisibilityType.Important)]
+        [OpenApiOperation(operationId: nameof(UrlList), tags: [Constants.OpenApi.FunctionTag], Summary = "List of Urls", Description = "This returns list of Urls.", Visibility = OpenApiVisibilityType.Important)]
         [OpenApiSecurity(Schemes.Bearer, SecuritySchemeType.Http, BearerFormat = Schemes.BearerFormat, In = OpenApiSecurityLocationType.Header, Name = Headers.Authorization, Scheme = OpenApiSecuritySchemeType.Bearer)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ListResponse), Description = "Successful operation")]
         public async Task<HttpResponseData> Run(

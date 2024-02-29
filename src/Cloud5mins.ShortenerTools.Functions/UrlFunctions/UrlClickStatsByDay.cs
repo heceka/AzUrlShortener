@@ -29,7 +29,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         };
 
         [Function("UrlClickStatsByDay")]
-        [OpenApiOperation(operationId: nameof(UrlClickStatsByDay), tags: [nameof(UrlClickStatsByDay)], Summary = "Get URL click stats by day", Description = "Get URL click stats by day.", Visibility = OpenApiVisibilityType.Important)]
+        [OpenApiOperation(operationId: nameof(UrlClickStatsByDay), tags: [Constants.OpenApi.FunctionTag], Summary = "Get URL click stats by day", Description = "Get URL click stats by day.", Visibility = OpenApiVisibilityType.Important)]
         [OpenApiSecurity(Schemes.Bearer, SecuritySchemeType.Http, BearerFormat = Schemes.BearerFormat, In = OpenApiSecurityLocationType.Header, Name = Headers.Authorization, Scheme = OpenApiSecuritySchemeType.Bearer)]
         [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(UrlClickStatsRequest), Description = "URL click stats by day model", Required = true)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ClickDateList), Description = "Successful operation")]
