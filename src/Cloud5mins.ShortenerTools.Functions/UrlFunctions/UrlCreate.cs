@@ -32,7 +32,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         [OpenApiOperation(operationId: nameof(UrlCreate), tags: [Constants.OpenApi.FunctionTag], Summary = "Create URL", Description = "This creates URL.", Visibility = OpenApiVisibilityType.Important)]
         [OpenApiSecurity(Schemes.Bearer, SecuritySchemeType.Http, BearerFormat = Schemes.BearerFormat, In = OpenApiSecurityLocationType.Header, Name = Headers.Authorization, Scheme = OpenApiSecuritySchemeType.Bearer)]
         [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(ShortRequest), Description = "URL create model", Required = true)]
-        [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ShortRequest), Description = "Successful operation")]
+        [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ShortResponse), Description = "Successful operation")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "UrlCreate")] HttpRequestData req)
         {

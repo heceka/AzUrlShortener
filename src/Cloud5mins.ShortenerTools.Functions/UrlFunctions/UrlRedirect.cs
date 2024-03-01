@@ -21,6 +21,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
 
         [Function("UrlRedirect")]
         [OpenApiOperation(operationId: nameof(UrlRedirect), tags: [Constants.OpenApi.FunctionTag], Summary = "Redirect URL", Description = "This redirects URL.", Visibility = OpenApiVisibilityType.Important)]
+        [OpenApiParameter(nameof(shortUrl), In = ParameterLocation.Path, Required = true, Type = typeof(string))]
         [OpenApiResponseWithoutBody(HttpStatusCode.Redirect)]
         public async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Redirect/{shortUrl}")] HttpRequestData req,
