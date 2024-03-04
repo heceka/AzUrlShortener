@@ -34,7 +34,8 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
         [OpenApiRequestBody(MediaTypeNames.Application.Json, typeof(ShortRequest), Description = "URL create model", Required = true)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ShortResponse), Description = "Successful operation")]
         public async Task<HttpResponseData> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "UrlCreate")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "UrlCreate")] HttpRequestData req,
+            [FromBody] ShortRequest request)
         {
             _logger.LogInformation($"__trace creating shortURL: {req}");
 
@@ -45,7 +46,6 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
                 return unauthorizedResponse;
             }
 
-            ShortRequest input;
             ShortResponse result;
 
             try
@@ -53,39 +53,38 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
                 if (req == null)
                     return req.CreateResponse(HttpStatusCode.NotFound);
 
-                using (var reader = new StreamReader(req.Body))
+                if (request == null)
                 {
-                    var strBody = await reader.ReadToEndAsync();
-                    input = JsonSerializer.Deserialize<ShortRequest>(strBody, s_readOptions);
-                    if (input == null)
-                        return req.CreateResponse(HttpStatusCode.NotFound);
+                    var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResponse.WriteAsJsonAsync(new { Message = "The ShortRequest body can not be empty." });
+                    return badResponse;
                 }
 
                 // If the Url parameter only contains whitespaces or is empty return with BadRequest.
-                if (string.IsNullOrWhiteSpace(input.Url))
+                if (string.IsNullOrWhiteSpace(request.Url))
                 {
                     var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
                     await badResponse.WriteAsJsonAsync(new { Message = "The url parameter can not be empty." });
                     return badResponse;
                 }
 
-                // Validates if input.url is a valid aboslute url, aka is a complete refrence to the resource, ex: http(s)://google.com
-                if (!Uri.IsWellFormedUriString(input.Url, UriKind.Absolute))
+                // Validates if request.url is a valid aboslute url, aka is a complete refrence to the resource, ex: http(s)://google.com
+                if (!Uri.IsWellFormedUriString(request.Url, UriKind.Absolute))
                 {
                     var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                    await badResponse.WriteAsJsonAsync(new { Message = $"{input.Url} is not a valid absolute Url. The Url parameter must start with 'http://' or 'http://'." });
+                    await badResponse.WriteAsJsonAsync(new { Message = $"{request.Url} is not a valid absolute Url. The Url parameter must start with 'http://' or 'http://'." });
                     return badResponse;
                 }
 
-                string longUrl = input.Url.Trim();
-                string vanity = string.IsNullOrWhiteSpace(input.Vanity) ? "" : input.Vanity.Trim();
-                string title = string.IsNullOrWhiteSpace(input.Title) ? "" : input.Title.Trim();
+                string longUrl = request.Url.Trim();
+                string vanity = string.IsNullOrWhiteSpace(request.Vanity) ? "" : request.Vanity.Trim();
+                string title = string.IsNullOrWhiteSpace(request.Title) ? "" : request.Title.Trim();
 
                 ShortUrlEntity newRow;
 
                 if (!string.IsNullOrEmpty(vanity))
                 {
-                    newRow = new ShortUrlEntity(longUrl, vanity, title, input.Schedules);
+                    newRow = new ShortUrlEntity(longUrl, vanity, title, request.Schedules);
                     if (await storageTableHelper.IfShortUrlEntityExistAsync(newRow))
                     {
                         var badResponse = req.CreateResponse(HttpStatusCode.Conflict);
@@ -94,7 +93,7 @@ namespace Cloud5mins.ShortenerTools.Functions.UrlFunctions
                     }
                 }
                 else
-                    newRow = new ShortUrlEntity(longUrl, await Utility.GetValidEndUrl(vanity, storageTableHelper), title, input.Schedules);
+                    newRow = new ShortUrlEntity(longUrl, await Utility.GetValidEndUrl(vanity, storageTableHelper), title, request.Schedules);
 
                 await storageTableHelper.SaveShortUrlEntityAsync(newRow);
 
